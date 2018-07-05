@@ -15,6 +15,9 @@ defmodule LogisticMapNif do
   def map_calc_t1(_list, _num, _p, _mu), do:
   :erlang.nif_error(:nif_not_loaded)
 
+  def map_calc_t2(_list, _num, _p, _mu, _pid), do:
+  :erlang.nif_error(:nif_not_loaded)
+
   def floor(value, precision \\ 1) do
     Float.floor(value / precision) * precision |> Kernel.trunc
   end

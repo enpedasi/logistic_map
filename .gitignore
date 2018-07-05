@@ -30,3 +30,5 @@ mix.lock
 
 # Ignore log.txt
 log.txt
+
+/.elixir_ls

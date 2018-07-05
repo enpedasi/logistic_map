@@ -337,6 +337,48 @@ defmodule LogisticMap do
   end
 
   @doc """
+  Flow.map calc logistic map
+
+  ## Examples
+
+      iex> 1..3 |> LogisticMap.map_calc_t2(10, 61, 22, 1)
+      [28, 25, 37]
+  """
+  def map_calc_t2(list, num, p, mu, stages) when stages <= 1 do
+    {:ok, pid} = NIFThread.Receiver.start_link()
+  	#list
+    :timer.tc( fn -> list |> Enum.to_list end)
+    |> case do
+       {elapsed, res} -> IO.inspect list_make: elapsed / 1_000_000
+       res
+    end
+    |> LogisticMapNif.map_calc_t2(num, p, mu, pid)
+    # result = GenServer.call(pid, :get)
+    # GenServer.stop(pid)
+    pid
+  end
+  def map_calc_t2(list, num, p, mu, stages) when stages > 1 do
+    {:ok, pid} = NIFThread.Receiver.start_link()
+    chunk_size = div(Enum.count(list) - 1, stages) + 1
+    list
+    |> Stream.chunk_every(chunk_size)
+    |> Stream.map(fn e ->
+    	Task.start(fn ->
+    		e
+    		|> LogisticMapNif.map_calc_t2(num, p, mu, pid)
+    	end)
+    end)
+    |> Enum.to_list
+    # |> List.flatten
+    # result = GenServer.call(pid, :get)
+    #GenServer.stop(pid)
+    pid
+  end
+
+
+
+
+  @doc """
   Benchmark
   """
   def benchmark1(stages) do
@@ -449,6 +491,23 @@ defmodule LogisticMap do
   end
 
   @doc """
+  Benchmark
+  """
+  def benchmark_t2(stages) do
+    IO.puts "stages: #{stages}"
+    IO.puts (
+      :timer.tc(fn -> map_calc_t2(1..@logistic_map_size, @default_loop, @default_prime, @default_mu, stages) end)
+      |> case do
+          {elapsed, pid} ->
+            IO.inspect pid
+            # IO.inspect GenServer.call(pid, :get)
+            # GenServer.stop(pid)
+            elapsed / (1000000)
+      end
+    )
+  end
+
+  @doc """
   Benchmarks
   """
   def benchmarks1() do
@@ -529,6 +588,15 @@ defmodule LogisticMap do
   def benchmarks_t1() do
     [1]
     |> Enum.map(& benchmark_t1(&1))
+    |> Enum.reduce(0, fn _lst, acc -> acc end)
+  end
+
+  @doc """
+  Benchmarks
+  """
+  def benchmarks_t2() do
+    [1]
+    |> Enum.map(& benchmark_t2(&1))
     |> Enum.reduce(0, fn _lst, acc -> acc end)
   end
 
